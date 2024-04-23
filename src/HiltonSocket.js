@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './HiltonSocket.css'; // Import CSS file for styling
+import './HiltonSocket.css'; 
 
 function HiltonSocket() {
     const [messages, setMessages] = useState([]);
     const [welcomeMessage, setWelcomeMessage] = useState("");
     const [userInput, setUserInput] = useState("");
     const wsRef = useRef(null);
+    const [sessionId, setSessionId] = useState(null);
 
     useEffect(() => {
         wsRef.current = new WebSocket("wss://apps.aiassistant.co:4005/");
@@ -17,18 +18,18 @@ function HiltonSocket() {
                 channel: "web",
             };
             wsRef.current.send(JSON.stringify(initMessage));
-            setTimeout(() => {
-                QuerySimulator(wsRef.current);
-            }, 1000);
         };
+
         wsRef.current.onmessage = (event) => {
             const parsedMessage = JSON.parse(event.data);
 
             if (parsedMessage?.type === "start" && parsedMessage?.text) {
                 setWelcomeMessage(parsedMessage.text);
-            } else if (parsedMessage?.type === "text" || parsedMessage?.type === "query") {
-
-                setMessages(prevMessages => [...prevMessages, { type: parsedMessage.type, text: parsedMessage.text.trim() }]);
+                setSessionId(parsedMessage.session_id);
+            } else if (parsedMessage?.type === "text") {
+                setMessages(prevMessages => [...prevMessages, { type: 'ai', text: parsedMessage.text.trim() }]);
+            } else if (parsedMessage?.type === "end") {
+                
             }
         };
 
@@ -52,20 +53,41 @@ function HiltonSocket() {
     };
 
     const handleSendMessage = () => {
-
         if (wsRef.current.readyState === WebSocket.OPEN) {
             const queryMessage = {
                 type: "query",
                 productId: "hiltonloscabos",
                 text: userInput,
-                summary: false,
+                summary: false
             };
             wsRef.current.send(JSON.stringify(queryMessage));
             setMessages(prevMessages => [...prevMessages, { type: 'user', text: userInput }]);
-            setUserInput(""); // Clear input after sending
+            setUserInput(""); 
         } else {
             console.error('WebSocket is not open.');
         }
+    };
+
+    const renderMessages = () => {
+        let renderedMessages = [];
+        let currentMessage = "";
+
+        messages.forEach((message, index) => {
+            if (index === 0 || message.type !== messages[index - 1].type) {
+                
+                currentMessage = message.text;
+                renderedMessages.push(
+                    <p key={index} className={`message ${message.type}-message`}>{currentMessage}</p>
+                );
+            } else {
+                currentMessage += " " + message.text;
+                renderedMessages[renderedMessages.length - 1] = (
+                    <p key={index} className={`message ${message.type}-message`}>{currentMessage}</p>
+                );
+            }
+        });
+
+        return renderedMessages;
     };
 
     return (
@@ -77,19 +99,7 @@ function HiltonSocket() {
             <div className="chat-box">
                 <div className="conversation">
                     <div className="messages">
-                       
-                        <p className="message ai-message">
-                            {messages.filter(message => message.type === "text" || message.type === "query")
-                                .map(message => message.text)
-                                .join(" ")}
-                        </p>
-                        
-                        {messages.filter(message => message.type === "user")
-                            .map((message, index) => (
-                                <p key={index} className="message user-message">
-                                    {message.text}
-                                </p>
-                            ))}
+                        {renderMessages()}
                     </div>
                 </div>
                 <div className="user-input">
@@ -104,25 +114,6 @@ function HiltonSocket() {
             </div>
         </div>
     );
-}
-
-function QuerySimulator(ws) {
-    const userQuestions = [
-        "Is there housekeeping service?",
-        "Is there any airport nearby?",
-    ];
-
-    userQuestions.forEach((question, i) => {
-        setTimeout(() => {
-            const queryMessage = {
-                type: "query",
-                productId: "hiltonloscabos",
-                text: question,
-                summary: false,
-            };
-            ws.send(JSON.stringify(queryMessage));
-        }, 3000 * i);
-    });
 }
 
 export default HiltonSocket;
