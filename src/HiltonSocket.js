@@ -27,7 +27,7 @@ function HiltonSocket() {
                 setWelcomeMessage(parsedMessage.text);
                 setSessionId(parsedMessage.session_id);
             } else if (parsedMessage?.type === "text") {
-                setMessages(prevMessages => [...prevMessages, { type: 'ai', text: parsedMessage.text.trim() }]);
+                setMessages(prevMessages => [...prevMessages, { type: 'ai', text: parsedMessage.text }]);
             } else if (parsedMessage?.type === "end") {
                 
             }
@@ -80,7 +80,7 @@ function HiltonSocket() {
                     <p key={index} className={`message ${message.type}-message`}>{currentMessage}</p>
                 );
             } else {
-                currentMessage += " " + message.text;
+                currentMessage += "" + message.text;
                 renderedMessages[renderedMessages.length - 1] = (
                     <p key={index} className={`message ${message.type}-message`}>{currentMessage}</p>
                 );
@@ -92,7 +92,7 @@ function HiltonSocket() {
 
     return (
         <div className="chat-container">
-            <h1>WebSocket Messages</h1>
+            <h1>Hilton Demo</h1>
             <div className="welcome-box">
                 <p className="welcome-message">{welcomeMessage}</p>
             </div>
